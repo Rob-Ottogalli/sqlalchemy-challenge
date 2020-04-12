@@ -48,8 +48,8 @@ def welcome():
         f"/api/v1.0/precipitation<br/>"
         f"/api/v1.0/stations<br/>"
         f"/api/v1.0/tobs<br/>"
-        f"/api/v1.0/<start><br/>"
-        f"/api/v1.0/<start>/<end>"
+        f"/api/v1.0/%Y-%m-%d<br/>"
+        f"/api/v1.0/%Y-%m-%d/%Y-%m-%d"
     )
 
 @app.route("/api/v1.0/precipitation")
@@ -142,11 +142,11 @@ def start_date(start):
     # Create our session (link) from Python to the DB
     session = Session(engine)
 
-    """Fetch the Max, Min, and Avg temp where the start date matches
-       the path variable supplied by the user, or a 404 if not."""    
+    """Fetch the Max, Min, and Avg temp for all dates greater than the start date 
+       that matches the path variable supplied by the user."""    
 
     # Query the Max, Min, and Avg temps for all dates
-    # beginning with teh start date entered
+    # beginning with the start date entered
     results = (session.query(func.min(Measurement.tobs), 
                              func.avg(Measurement.tobs), 
                              func.max(Measurement.tobs))
@@ -159,6 +159,28 @@ def start_date(start):
 
     return jsonify(min_max_avg_temp)
 
+@app.route("/api/v1.0/<start>/<end>")
+def start_end_date(start, end):
+    # Create our session (link) from Python to the DB
+    session = Session(engine)
+
+    """Fetch the Max, Min, and Avg temp for all dates between the start and end dates
+       that match the path variable supplied by the user."""   
+
+    # Query the Max, Min, and Avg temps for all dates
+    # between the start and end dates entered
+    results = (session.query(func.min(Measurement.tobs), 
+                             func.avg(Measurement.tobs), 
+                             func.max(Measurement.tobs))
+              .filter(Measurement.date >= start)
+              .filter(Measurement.date <= end)
+              .all())
+    session.close()
+
+    # Convert list of tuples into normal list
+    min_max_avg_temp = list(np.ravel(results))
+
+    return jsonify(min_max_avg_temp)
 
 if __name__ == '__main__':
     app.run(debug=True)
