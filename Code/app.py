@@ -125,7 +125,7 @@ def tobs():
     # Set a query to list unique stations
     results = (session.query(Measurement.tobs)
               .filter(Measurement.date >= year_prior)
-              .filter(Measurement.station == "USC00519397")
+              .filter(Measurement.station == "USC00519281")
               .all())
     
     session.close()
