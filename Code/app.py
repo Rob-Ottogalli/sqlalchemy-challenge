@@ -110,5 +110,55 @@ def stations():
 
     return jsonify(all_stations)
 
+@app.route("/api/v1.0/tobs")
+def tobs():
+    # Create our session (link) from Python to the DB
+    session = Session(engine)
+
+    """Return a list of observed temperatures for most active station"""
+
+    # Calculate the date 1 year ago from the last data point in the database
+    last_date = (session.query(Measurement.date)
+                .order_by(Measurement.date.desc()).first())
+
+    # Set variable to hold date of 1 year prior
+    year_prior = convert(last_date[0]) - dt.timedelta(days=365)
+
+    # Set a query to list unique stations
+    results = (session.query(Measurement.tobs)
+              .filter(Measurement.date >= year_prior)
+              .filter(Measurement.station == "USC00519397")
+              .all())
+    
+    session.close()
+
+    # Convert list of tuples into normal list
+    tobs_list = list(np.ravel(results))
+
+    return jsonify(tobs_list)    
+
+@app.route("/api/v1.0/<start>")
+def start_date(start):
+    # Create our session (link) from Python to the DB
+    session = Session(engine)
+
+    """Fetch the Max, Min, and Avg temp where the start date matches
+       the path variable supplied by the user, or a 404 if not."""    
+
+    # Query the Max, Min, and Avg temps for all dates
+    # beginning with teh start date entered
+    results = (session.query(func.min(Measurement.tobs), 
+                             func.avg(Measurement.tobs), 
+                             func.max(Measurement.tobs))
+              .filter(Measurement.date >= start)
+              .all())
+    session.close()
+
+    # Convert list of tuples into normal list
+    min_max_avg_temp = list(np.ravel(results))
+
+    return jsonify(min_max_avg_temp)
+
+
 if __name__ == '__main__':
     app.run(debug=True)
