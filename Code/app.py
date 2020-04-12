@@ -48,8 +48,8 @@ def welcome():
         f"/api/v1.0/precipitation<br/>"
         f"/api/v1.0/stations<br/>"
         f"/api/v1.0/tobs<br/>"
-        f"/api/v1.0/%Y-%m-%d<br/>"
-        f"/api/v1.0/%Y-%m-%d/%Y-%m-%d"
+        f"/api/v1.0/start<br/>"
+        f"/api/v1.0/start/end"
     )
 
 @app.route("/api/v1.0/precipitation")
@@ -97,11 +97,9 @@ def stations():
     year_prior = convert(last_date[0]) - dt.timedelta(days=365)
 
     # Set a query to list unique stations
-    results = (session.query(Measurement.station)
-            .filter(Measurement.date >= year_prior)
-            .group_by(Measurement.station)
-            .order_by(func.count(Measurement.station).desc())
-            .all())
+    results = (session.query(func.distinct(Station.station))
+              .join(Measurement, Station.station == Measurement.station)
+              .all())
     
     session.close()
 
@@ -150,6 +148,7 @@ def start_date(start):
     results = (session.query(func.min(Measurement.tobs), 
                              func.avg(Measurement.tobs), 
                              func.max(Measurement.tobs))
+              .join(Station, Station.station == Measurement.station)
               .filter(Measurement.date >= start)
               .all())
     session.close()
@@ -172,6 +171,7 @@ def start_end_date(start, end):
     results = (session.query(func.min(Measurement.tobs), 
                              func.avg(Measurement.tobs), 
                              func.max(Measurement.tobs))
+              .join(Station, Station.station == Measurement.station)                             
               .filter(Measurement.date >= start)
               .filter(Measurement.date <= end)
               .all())
